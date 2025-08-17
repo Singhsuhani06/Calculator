@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Modern Calculator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  /* Add background image */
+  background-image: url('https://images.pexels.com/photos/31177056/pexels-photo-31177056/free-photo-of-colorful-javascript-code-display-on-screen.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2');
+  background-size: cover;      /* Makes it cover the screen */
+  background-position: center; /* Centers the image */
+  background-repeat: no-repeat;/* Prevents tiling */
+}
+
+    .calculator {
+      background: #f1f6f7;
+      border-radius: 15px;
+      padding: 20px;
+      width: 320px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+    .display {
+      background: #2d0f8e;
+      color: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: right;
+      font-size: 2rem;
+      margin-bottom: 10px;
+      position: relative;
+    }
+    .result {
+      font-size: 1rem;
+      color: #1f3b7d;
+      position: absolute;
+      top: 5px;
+      right: 15px;
+    }
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    button {
+      padding: 20px;
+      font-size: 1.2rem;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background: #c12f15;
+      color: #fff;
+      transition: all 0.2s;
+    }
+    button:hover {
+      background: #c12f15;
+      transform: scale(1.05);
+    }
+    button.operator {
+      background: #e67e22;
+    }
+    button.operator:hover {
+      background: #d35400;
+    }
+    button.equals {
+      background: #75b184;
+      grid-column: span 2;
+    }
+    button.equals:hover {
+      background: #75b184;
+    }
+    button.clear {
+      background: #a4ba15;
+    }
+    button.clear:hover {
+      background: #a4ba15;
+    }
+    button.burst {
+      transform: scale(0.9);
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator">
+    <div class="display">
+      <div class="result" id="result"></div>
+      <div id="display">0</div>
+    </div>
+    <div class="buttons" id="buttons">
+      <button class="clear" data-action="clear">C</button>
+      <button data-action="delete">⌫</button>
+      <button data-action="sign">±</button>
+      <button class="operator" data-action="operator" data-value="÷">÷</button>
+      
+      <button data-action="digit" data-value="7">7</button>
+      <button data-action="digit" data-value="8">8</button>
+      <button data-action="digit" data-value="9">9</button>
+      <button class="operator" data-action="operator" data-value="×">×</button>
+      
+      <button data-action="digit" data-value="4">4</button>
+      <button data-action="digit" data-value="5">5</button>
+      <button data-action="digit" data-value="6">6</button>
+      <button class="operator" data-action="operator" data-value="-">−</button>
+      
+      <button data-action="digit" data-value="1">1</button>
+      <button data-action="digit" data-value="2">2</button>
+      <button data-action="digit" data-value="3">3</button>
+      <button class="operator" data-action="operator" data-value="+">+</button>
+      
+      <button data-action="digit" data-value="0">0</button>
+      <button data-action="decimal">.</button>
+      <button class="equals" data-action="equals">=</button>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const displayEl = document.getElementById('display');
+      const resultEl = document.getElementById('result');
+      const buttons = document.getElementById('buttons');
+      let current = '0';
+      let accumulator = null;
+      let operator = null;
+      let justEvaluated = false;
+
+      const OPS = {
+        '+': (a, b) => a + b,
+        '−': (a, b) => a - b,
+        '×': (a, b) => a * b,
+        '÷': (a, b) => b === 0 ? 'ERR_DIV0' : a / b
+      };
+
+      function formatNumber(str) {
+        return str.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
+      }
+
+      function updateDisplay() {
+        displayEl.textContent = current;
+        resultEl.textContent = '';
+      }
+
+      function inputDigit(d) {
+        if (justEvaluated) {
+          current = d;
+          justEvaluated = false;
+        } else {
+          current = current === '0' ? d : current + d;
+        }
+        updateDisplay();
+        liveCompute();
+      }
+
+      function inputDecimal() {
+        if (justEvaluated) {
+          current = '0.';
+          justEvaluated = false;
+        } else if (!current.includes('.')) {
+          current += '.';
+        }
+        updateDisplay();
+      }
+
+      function setOperator(op) {
+        if (accumulator === null) {
+          accumulator = current;
+        } else if (!justEvaluated) {
+          accumulator = String(OPS[operator](Number(accumulator), Number(current)));
+        }
+        operator = op;
+        current = '0';
+        justEvaluated = false;
+        updateDisplay();
+      }
+
+      function equals() {
+        if (operator && accumulator !== null) {
+          const res = OPS[operator](Number(accumulator), Number(current));
+          if (res === 'ERR_DIV0') {
+            displayEl.textContent = "Can't ÷ by 0";
+          } else {
+            current = formatNumber(String(res));
+            displayEl.textContent = current;
+          }
+          accumulator = null;
+          operator = null;
+          justEvaluated = true;
+          resultEl.textContent = '';
+        }
+      }
+
+      function clearAll() {
+        current = '0';
+        accumulator = null;
+        operator = null;
+        justEvaluated = false;
+        updateDisplay();
+      }
+
+      function delOne() {
+        if (justEvaluated) {
+          clearAll();
+          return;
+        }
+        current = current.length > 1 ? current.slice(0, -1) : '0';
+        updateDisplay();
+        liveCompute();
+      }
+
+      function toggleSign() {
+        if (current === '0') return;
+        current = current.startsWith('-') ? current.slice(1) : '-' + current;
+        updateDisplay();
+      }
+
+      function liveCompute() {
+        if (operator && accumulator !== null && current !== '' && current !== '-') {
+          const a = Number(accumulator);
+          const b = Number(current);
+          const fn = OPS[operator];
+          const res = fn ? fn(a, b) : null;
+          if (res === 'ERR_DIV0') {
+            resultEl.textContent = "Can't ÷ by 0";
+            return;
+          }
+          if (Number.isFinite(res)) resultEl.textContent = formatNumber(String(res));
+        }
+      }
+
+      buttons.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const action = btn.dataset.action;
+        const value = btn.dataset.value;
+        switch (action) {
+          case 'digit': inputDigit(value); break;
+          case 'decimal': inputDecimal(); break;
+          case 'operator': setOperator(value); break;
+          case 'equals': equals(); break;
+          case 'clear': clearAll(); break;
+          case 'delete': delOne(); break;
+          case 'sign': toggleSign(); break;
+        }
+        btn.classList.add('burst');
+        setTimeout(() => btn.classList.remove('burst'), 130);
+      });
+
+      document.addEventListener('keydown', (e) => {
+        const key = e.key;
+        if (/^\d$/.test(key)) { inputDigit(key); return; }
+        if (key === '.') { inputDecimal(); return; }
+        if (['+', '-', '*', '/', 'x', 'X'].includes(key)) {
+          setOperator(key === '*' || key === 'x' || key === 'X' ? '×' : key === '/' ? '÷' : key);
+          return;
+        }
+        if (key === 'Enter' || key === '=') { e.preventDefault(); equals(); return; }
+        if (key === 'Backspace') { delOne(); return; }
+        if (key === 'Escape') { clearAll(); return; }
+      });
+
+      updateDisplay();
+    })();
+  </script>
+</body>
+</html>
